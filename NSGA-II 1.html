@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejemplo Práctico Guiado: NSGA-II</title>
+    <style>
+        body {
+            background-color: #FDFFE2;
+            color: #1A2130;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 900px;
+            background-color: #FDFFE2;
+            padding: 40px;
+        }
+        header {
+            border-bottom: 2px solid #5A72A0;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+        }
+        h1 {
+            color: #5A72A0;
+            font-size: 2.2rem;
+            margin: 0;
+        }
+        .subtitle {
+            font-style: italic;
+            color: #5A72A0;
+            margin-top: 5px;
+        }
+        h2 {
+            color: #5A72A0;
+            border-left: 5px solid #5A72A0;
+            padding-left: 15px;
+            margin-top: 40px;
+            font-size: 1.6rem;
+        }
+        h3 {
+            color: #5A72A0;
+            margin-top: 25px;
+            font-size: 1.3rem;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background-color: rgba(90, 114, 160, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            overflow-x: auto;
+        }
+        .note {
+            background-color: #eef2f7;
+            border-left: 4px solid #5A72A0;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        .highlight {
+            color: #5A72A0;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background-color: #ffffff;
+        }
+        th {
+            background-color: #5A72A0;
+            color: #ffffff;
+            padding: 12px;
+            text-align: left;
+        }
+        td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        pre {
+            background-color: #1A2130;
+            color: #FDFFE2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+    <script>
+      window.MathJax = {
+        tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ejemplo Práctico Guiado: NSGA-II</h1>
+            <p class="subtitle">Materia: Optimización Inteligente — Maestría</p>
+        </header>
+
+        <section>
+            <p>Para aterrizar los conceptos de optimización multiobjetivo, analizaremos el <strong>NSGA-II (Non-Dominated Sorting Genetic Algorithm II)</strong>. Este algoritmo fue propuesto por Kalyanmoy Deb en 2002. Su éxito radica en la combinación de tres mecanismos fundamentales: un ordenamiento rápido no dominado, la preservación de la diversidad utilizando <em>crowding distance</em>, y un fuerte mecanismo elitista.</p>
+
+            <h2>1. ¿Qué cambia respecto a un Algoritmo Genético Clásico?</h2>
+            <p>Antes de ver los pasos, es crucial entender cómo adaptamos la evolución natural a múltiples objetivos simultáneos. Un GA multiobjetivo no busca una sola respuesta, sino un mapa de compromisos óptimos.</p>
+            
+            <table>
+              <thead>
+                <tr>
+                  <th>Elemento del GA</th>
+                  <th>En versión clásica</th>
+                  <th>En versión multiobjetivo (NSGA-II)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Evaluación</td>
+                  <td>Una función \( f(x) \)</td>
+                  <td>Vector de funciones \([f_1, f_2, \dots]\)</td>
+                </tr>
+                <tr>
+                  <td>Comparación</td>
+                  <td>Orden total (fitness único)</td>
+                  <td>Orden parcial (Dominancia de Pareto)</td>
+                </tr>
+                <tr>
+                  <td>Selección</td>
+                  <td>Mejor aptitud global</td>
+                  <td>Ranking de frentes + Crowding distance</td>
+                </tr>
+                <tr>
+                  <td>Resultado</td>
+                  <td>Una única mejor solución</td>
+                  <td>Un frente de Pareto (múltiples soluciones)</td>
+                </tr>
+              </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>2. Pasos del NSGA-II: Un Ejemplo Concreto</h2>
+            <p>Supongamos que queremos minimizar simultáneamente dos funciones:</p>
+            <div class="equation-box">
+                \[ f_1(x) = x^2, \quad f_2(x) = (x - 2)^2, \quad x \in [0, 2] \]
+            </div>
+            <p>Como \( f_1 \) es mínima en \( x = 0 \) y \( f_2 \) es mínima en \( x = 2 \), no hay un único mínimo que satisfaga ambas; el frente de Pareto existirá entre esos valores.</p>
+
+            <h3>Paso 1: Generación y Evaluación</h3>
+            <p>Se crean \( N \) soluciones aleatorias en el rango [0, 2]. Para cada individuo \( x_i \), calculamos su vector de objetivos evaluando tanto \( f_1(x_i) \) como \( f_2(x_i) \). Esto nos da puntos en el espacio bidimensional de los objetivos.</p>
+
+            <h3>Paso 2: Ordenamiento No Dominado</h3>
+            <p>El algoritmo clasifica a toda la población en "frentes". Las soluciones que no son dominadas por ninguna otra forman el Frente 1. Las que solo son dominadas por las del Frente 1, pasan al Frente 2, y así sucesivamente. Esto otorga una prioridad clara a la hora de reproducirse.</p>
+
+            <h3>Paso 3: Cálculo de Crowding Distance</h3>
+            <p>Si solo elegimos a los mejores, todas las soluciones terminarán agrupadas en un solo punto del frente. Para mantener la <strong>diversidad</strong>, NSGA-II mide la distancia de hacinamiento (<em>crowding distance</em>). En cada frente, se calcula qué tan lejos está una solución de sus vecinas más próximas:</p>
+            <div class="equation-box">
+                \[ \mathrm{CD}(x_i) = \sum_{k=1}^{m} \frac{f_k(i+1) - f_k(i-1)}{f_k^{\max} - f_k^{\min}} \]
+            </div>
+            <p>Las soluciones ubicadas en zonas menos pobladas (con mayor distancia) reciben prioridad, garantizando que cubramos todo el abanico de posibilidades.</p>
+
+            <h3>Paso 4: Cruza, Mutación y Elitismo</h3>
+            <p>Se seleccionan los padres mediante torneos, prefiriendo siempre a los que están en mejores frentes o, en caso de empate, a los que tienen mayor <em>crowding distance</em>. Se aplican los operadores genéticos (cruza y mutación) para generar la población hija \( Q_t \).</p>
+            <p>Finalmente, se aplica el <strong>elitismo</strong>: se combinan los padres \( P_t \) con los hijos \( Q_t \) para formar una población extendida \( R_t = P_t \cup Q_t \). De este grupo combinado, se extraen los \( N \) mejores individuos basándose en frentes y distancias para formar la siguiente generación. Esto asegura que las soluciones excelentes nunca se pierdan por accidente.</p>
+        </section>
+
+                <section>
+            <h2>3. Ejemplo Numérico: Calculando Frentes y Distancias</h2>
+            <p>Para comprender exactamente cómo funciona el motor del NSGA-II, vamos a resolver un escenario simplificado a mano. Supongamos que queremos <strong>minimizar</strong> dos funciones objetivo (\(f_1\) y \(f_2\)), y tenemos una población de 5 soluciones en nuestra generación actual.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Individuo</th>
+                        <th>\(f_1(x)\)</th>
+                        <th>\(f_2(x)\)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>A</strong></td><td>1</td><td>10</td></tr>
+                    <tr><td><strong>B</strong></td><td>2</td><td>6</td></tr>
+                    <tr><td><strong>C</strong></td><td>4</td><td>4</td></tr>
+                    <tr><td><strong>D</strong></td><td>8</td><td>2</td></tr>
+                    <tr style="background-color: #f0f4f8;"><td><strong>E</strong></td><td>5</td><td>8</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Paso A: Construcción de los Frentes (Ordenamiento No Dominado)</h3>
+            <p>Aplicamos la regla de dominancia comparando a todos contra todos. Recordemos: queremos minimizar ambos objetivos.</p>
+            <ul>
+                <li>¿Alguien domina a <strong>A(1, 10)</strong>? Nadie. Tiene el mejor \(f_1\).</li>
+                <li>¿Alguien domina a <strong>B(2, 6)</strong>? Nadie.</li>
+                <li>¿Alguien domina a <strong>C(4, 4)</strong>? Nadie.</li>
+                <li>¿Alguien domina a <strong>D(8, 2)</strong>? Nadie. Tiene el mejor \(f_2\).</li>
+                <li>¿Alguien domina a <strong>E(5, 8)</strong>? <strong>Sí.</strong> Si observamos a <strong>B(2, 6)</strong>, vemos que \(2 < 5\) y \(6 < 8\). <strong>B domina a E</strong>.</li>
+            </ul>
+            <div class="example-box">
+                <strong>Clasificación resultante:</strong>
+                <p><strong>Frente 1:</strong> { A, B, C, D } <em>(Soluciones óptimas actuales)</em></p>
+                <p><strong>Frente 2:</strong> { E } <em>(Soluciones dominadas únicamente por el Frente 1)</em></p>
+            </div>
+
+            <h3>Paso B: Cálculo del Crowding Distance (Hacinamiento)</h3>
+            <p>Ahora tomamos el <strong>Frente 1</strong> para ver qué soluciones son más valiosas por su aporte a la diversidad. Calcularemos la distancia para los objetivos \(f_1\) y \(f_2\).</p>
+            
+            <p><strong>1. Ordenamos por el objetivo \(f_1\):</strong> { A(1), B(2), C(4), D(8) }</p>
+            <ul>
+                <li><strong>Extremos:</strong> A y D reciben una distancia infinita (\(\infty\)) para asegurar que los bordes del frente siempre sobrevivan.</li>
+                <li>El rango total de \(f_1\) es: \(8 - 1 = 7\).</li>
+                <li>\(CD_{f1}(B) = \frac{Valor_C - Valor_A}{Rango} = \frac{4 - 1}{7} = 0.42\)</li>
+                <li>\(CD_{f1}(C) = \frac{Valor_D - Valor_B}{Rango} = \frac{8 - 2}{7} = 0.85\)</li>
+            </ul>
+
+            <p><strong>2. Ordenamos por el objetivo \(f_2\):</strong> { D(2), C(4), B(6), A(10) }</p>
+            <ul>
+                <li><strong>Extremos:</strong> D y A reciben distancia \(\infty\).</li>
+                <li>El rango total de \(f_2\) es: \(10 - 2 = 8\).</li>
+                <li>\(CD_{f2}(C) = \frac{Valor_B - Valor_D}{Rango} = \frac{6 - 2}{8} = 0.50\)</li>
+                <li>\(CD_{f2}(B) = \frac{Valor_A - Valor_C}{Rango} = \frac{10 - 4}{8} = 0.75\)</li>
+            </ul>
+
+            <div class="equation-box">
+                <strong>Resultados Finales del Crowding Distance:</strong><br><br>
+                \(CD(A) = \infty + \infty = \infty\)<br>
+                \(CD(B) = 0.42 + 0.75 = 1.17\)<br>
+                \(CD(C) = 0.85 + 0.50 = 1.35\)<br>
+                \(CD(D) = \infty + \infty = \infty\)
+            </div>
+
+            <div class="note">
+                <strong>Decisión del Algoritmo:</strong> Si en la siguiente generación el algoritmo tuviera que eliminar a un individuo del Frente 1 por falta de espacio poblacional, eliminaría a <strong>B</strong>, ya que tiene el menor <em>crowding distance</em> (1.17). Esto significa que B está en la zona más "hacinada" o concurrida del frente, y preservar a C (1.35) aportará más diversidad al conjunto de soluciones.
+            </div>
+        </section>
+
+        <section>
+            <h2>3. Implementación Práctica</h2>
+            <div class="note">
+                <strong>Recomendación para los alumnos:</strong> En lugar de programar toda la lógica de frentes desde cero, en la industria utilizamos librerías especializadas.
+            </div>
+            <p>Para la próxima clase, prepararemos nuestro entorno en Python utilizando la librería DEAP:</p>
+<pre><code># Instalación de la librería en entorno virtual o Colab
+pip install deap</code></pre>
+            <p>Con DEAP, definiremos nuestras funciones <code>f1(x)</code> y <code>f2(x)</code>, y dejaremos que la librería maneje el ordenamiento por dominancia y el cálculo del hacinamiento para nosotros.</p>
+        </section>
+    </div>
+</body>
+</html>

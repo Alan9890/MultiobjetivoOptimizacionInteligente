@@ -1,0 +1,18 @@
+# Byte-compiled / cache de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Archivos temporales del sistema operativo / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Transcripción local de reunión de Teams (se conserva localmente)
+Meeting in _General_ .docx

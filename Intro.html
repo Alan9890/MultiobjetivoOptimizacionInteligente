@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introducción a la Optimización Multiobjetivo</title>
+    <style>
+        body {
+            background-color: #FDFFE2;
+            color: #1A2130;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 900px;
+            background-color: #FDFFE2;
+            padding: 40px;
+        }
+        header {
+            border-bottom: 2px solid #5A72A0;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+        }
+        h1 {
+            color: #5A72A0;
+            font-size: 2.2rem;
+            margin: 0;
+        }
+        .subtitle {
+            font-style: italic;
+            color: #5A72A0;
+            margin-top: 5px;
+        }
+        h2 {
+            color: #5A72A0;
+            border-left: 5px solid #5A72A0;
+            padding-left: 15px;
+            margin-top: 40px;
+            font-size: 1.6rem;
+        }
+        h3 {
+            color: #5A72A0;
+            margin-top: 25px;
+            font-size: 1.3rem;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        .equation-box {
+            background-color: rgba(90, 114, 160, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 1.25rem;
+            font-style: italic;
+        }
+        .note {
+            background-color: #eef2f7;
+            border-left: 4px solid #5A72A0;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        .example-box {
+            background-color: #f0f4f8;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #d1d9e6;
+        }
+        .highlight {
+            color: #5A72A0;
+            font-weight: bold;
+        }
+        ul, ol {
+            margin-bottom: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .reflection-box {
+            border: 2px dashed #5A72A0;
+            padding: 20px;
+            margin-top: 50px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Introducción a la Optimización Multiobjetivo</h1>
+            <p class="subtitle">Materia: Optimización Inteligente — Maestría</p>
+        </header>
+
+        <section>
+            <h2>1. Introducción: Optimización Monoobjetivo vs. Multiobjetivo</h2>
+            <p>Para entender la optimización multiobjetivo, primero debemos recordar dónde hemos estado trabajando hasta ahora.</p>
+            
+            <h3>Optimización Monoobjetivo</h3>
+            <p>En los problemas monoobjetivo, nuestra meta es encontrar una única solución óptima (o lo más cercana posible al óptimo) que minimice o maximice una <strong>única función objetivo</strong>. El modelo matemático básico es:</p>
+            
+            <div class="equation-box">
+                min f(x) sujeto a x &isin; &Omega;
+            </div>
+
+            <p>Donde <i>x</i> es el vector de variables de decisión y <i>&Omega;</i> es el espacio de soluciones factibles.</p>
+            <ul>
+                <li><strong>La analogía:</strong> Es como buscar la ruta más corta entre tu casa y la universidad. Solo te importa una cosa: la distancia. Hay un único "mejor" camino.</li>
+            </ul>
+
+            <h3>Optimización Multiobjetivo</h3>
+            <p>En el mundo real, los problemas rara vez tienen un solo objetivo. La optimización multiobjetivo (MOP, por sus siglas en inglés) implica minimizar o maximizar <strong>múltiples funciones objetivo simultáneamente</strong>. El modelo matemático se expande a:</p>
+            
+            <div class="equation-box">
+                min F(x) = (f<sub>1</sub>(x), f<sub>2</sub>(x), ..., f<sub>k</sub>(x))<sup>T</sup> sujeto a x &isin; &Omega;
+            </div>
+
+            <p>Donde <i>k &ge; 2</i> es el número de objetivos.</p>
+
+            <div class="note">
+                <strong>Aclaración Matemática:</strong> El símbolo <strong><sup>T</sup></strong> representa la <strong>transpuesta</strong>. En términos algebraicos, esto indica que estamos tratando el conjunto de objetivos como un vector columna. Es fundamental para la consistencia en las operaciones matriciales dentro de los algoritmos de optimización.
+            </div>
+
+            <ul>
+                <li><strong>La analogía:</strong> Ahora quieres buscar la ruta a la universidad que sea <strong>la más corta</strong> (distancia) pero también <strong>la más segura</strong> (índice de criminalidad) y <strong>la más rápida</strong> (tiempo de tráfico).</li>
+            </ul>
+
+            <p>Aquí es donde el paradigma cambia drásticamente: <strong>ya no existe una única solución perfecta</strong>. La solución que tiene la distancia más corta podría ser la más insegura. La más segura podría ser la más larga.</p>
+        </section>
+
+        <section>
+            <h2>2. El Concepto de Trade-off (Compromiso)</h2>
+            <p>El núcleo de la optimización multiobjetivo es el conflicto entre objetivos. Cuando los objetivos están en conflicto, mejorar uno inevitablemente resulta en el empeoramiento de al menos otro. A este fenómeno se le conoce como <strong>Trade-off</strong> o compromiso.</p>
+
+            <h3>Concepto Clave para entender el Trade-off: Dominancia</h3>
+            <p>Para comprender cómo lidiar con el <i>trade-off</i>, necesitamos el concepto de dominancia:</p>
+            <ul>
+                <li>Se dice que una solución <i>A</i> <strong>domina</strong> a una solución <i>B</i> si <i>A</i> es igual o mejor que <i>B</i> en <strong>todos</strong> los objetivos, y es estrictamente mejor en <strong>al menos uno</strong>.</li>
+                <li>Si una solución no es dominada por ninguna otra en el espacio de búsqueda, se le conoce como <strong>solución no dominada</strong> (o solución Pareto óptima).</li>
+            </ul>
+
+            <p>El conjunto de todas estas soluciones no dominadas forma lo que se conoce como el <strong>Frente de Pareto</strong>. En lugar de entregarle al tomador de decisiones una sola respuesta, en multiobjetivo le entregamos un abanico de opciones (el Frente de Pareto) para que analice el <i>trade-off</i> y elija la que mejor se adapte a sus preferencias subjetivas.</p>
+        </section>
+
+        <section>
+            <h2>3. Técnicas de Resolución Básicas (Introducción)</h2>
+            <p>Dado que es difícil manejar múltiples objetivos a la vez, los métodos clásicos intentan transformar el problema multiobjetivo en uno (o varios) problemas monoobjetivo.</p>
+
+            <h3>Método 1: Selección Lexicográfica</h3>
+            <p>Este es quizás el enfoque más intuitivo cuando los objetivos tienen una jerarquía estricta y clara de importancia. El término "lexicográfico" proviene de cómo se ordenan las palabras en un diccionario: la primera letra es la más importante; si hay empate, pasamos a la segunda, y así sucesivamente.</p>
+
+            <strong>Mecanismo:</strong>
+            <ol>
+                <li>El tomador de decisiones ordena los objetivos por prioridad absoluta: f<sub>1</sub> es más importante que f<sub>2</sub>, f<sub>2</sub> más que f<sub>3</sub>, etc.</li>
+                <li>Se optimiza el problema considerando <strong>solo</strong> el objetivo de mayor prioridad (f<sub>1</sub>).</li>
+                <li>Si hay múltiples soluciones óptimas para f<sub>1</sub> (un empate), estas soluciones pasan a una segunda ronda.</li>
+                <li>Se optimiza el segundo objetivo (f<sub>2</sub>) <strong>únicamente</strong> dentro de las soluciones que empataron en el paso anterior.</li>
+                <li>El proceso se repite hasta que queda una única solución o se agotan los objetivos.</li>
+            </ol>
+
+            <div class="example-box">
+                <strong>Ejemplo Práctico:</strong>
+                <p>Imagina que estás diseñando un sistema de aterrizaje de emergencia para un dron.</p>
+                <ul>
+                    <li><strong>Prioridad 1 (f<sub>1</sub>):</strong> Minimizar el daño a personas en tierra (crítico).</li>
+                    <li><strong>Prioridad 2 (f<sub>2</sub>):</strong> Minimizar el daño al propio dron (secundario).</li>
+                    <li><strong>Prioridad 3 (f<sub>3</sub>):</strong> Minimizar la distancia a la base de recuperación (deseable).</li>
+                </ul>
+                <p>El algoritmo lexicográfico primero buscará todas las trayectorias que garanticen cero daños a las personas. Digamos que encuentra tres trayectorias que logran esto. Luego, tomará esas tres trayectorias y evaluará cuál destruye menos el dron. Si dos empatan, evaluará cuál está más cerca de la base para decidir la ganadora final. El <i>trade-off</i> aquí se ignora a favor de una dictadura de prioridades.</p>
+            </div>
+
+            <h3>Método 2: Suma Ponderada (Weighted Sum)</h3>
+            <p>Este es el método más popular y utilizado en la industria debido a su simplicidad. Consiste en combinar todos los objetivos en una única ecuación global multiplicando cada uno por un peso (un valor numérico) que representa su importancia relativa.</p>
+
+            <strong>Modelo Matemático:</strong>
+            <p>Se transforma la función multiobjetivo en una monoobjetivo:</p>
+            <div class="equation-box">
+                min F(x) = &sum; w<sub>i</sub> f<sub>i</sub>(x)
+            </div>
+            <p>Sujeto a que la suma de todos los pesos <i>w<sub>i</sub></i> sea igual a 1, y <i>w<sub>i</sub> &ge; 0</i>.</p>
+
+            <div class="note">
+                <strong>Concepto Crítico Necesario: Normalización</strong><br>
+                Aquí es donde se suelen cometer errores graves. No puedes sumar directamente el precio de un servidor en dólares con su latencia en milisegundos. Si sumas 2000 USD + 15 ms, el valor del dinero aplastará al de los milisegundos simplemente por su escala matemática, arruinando el sistema de pesos. Por lo tanto, <strong>antes de multiplicar por los pesos, todos los objetivos deben normalizarse</strong> (por ejemplo, escalar todos sus valores a un rango entre 0 y 1).
+            </div>
+
+            <div class="example-box">
+                <strong>Ejemplo Práctico:</strong>
+                <p>Supongamos que estamos entrenando un modelo de Machine Learning y tenemos dos objetivos:</p>
+                <ul>
+                    <li>f<sub>1</sub>: Minimizar el error de predicción (ya normalizado de 0 a 1).</li>
+                    <li>f<sub>2</sub>: Minimizar el tiempo de inferencia (ya normalizado de 0 a 1).</li>
+                </ul>
+                <p>Como tomadores de decisión, sabemos que el modelo es para un sistema de diagnóstico médico en tiempo real, por lo que la precisión es vital, pero la velocidad también importa. Asignamos pesos:</p>
+                <ul>
+                    <li>w<sub>1</sub> = 0.8 (80% de importancia a la precisión).</li>
+                    <li>w<sub>2</sub> = 0.2 (20% de importancia a la velocidad).</li>
+                </ul>
+                <p>Nuestra función a optimizar con un algoritmo tradicional sería: <i>min F(x) = 0.8 &middot; f<sub>1</sub>(x) + 0.2 &middot; f<sub>2</sub>(x)</i></p>
+            </div>
+
+            <p><strong>Limitación importante a mencionar:</strong> El método de suma ponderada es excelente, pero tiene un defecto matemático: no puede encontrar soluciones en partes cóncavas del Frente de Pareto. Además, requiere que el experto sepa de antemano exactamente qué pesos asignar, lo cual en problemas complejos, a menudo es solo una estimación a ciegas.</p>
+        </section>
+
+        <div class="reflection-box">
+            <h3 style="margin-top: 0; text-align: center;">Pregunta guía para el grupo</h3>
+            <p style="text-align: center; font-size: 1.1rem;"><strong>Si cambiamos los pesos en el método de suma ponderada múltiples veces y corremos el algoritmo en cada cambio, ¿qué creen que empezaríamos a dibujar en el espacio de soluciones?</strong></p>
+            <p style="text-align: center; font-style: italic; color: #5A72A0; margin-top: 10px;">(La respuesta esperada para que deduzcan es: El Frente de Pareto).</p>
+        </div>
+                <section>
+            <h2>5. Dominancia y Frente de Pareto: Una Alternativa Integral</h2>
+            <p>A diferencia de la <strong>Selección Lexicográfica</strong> (que impone una jerarquía rígida) o la <strong>Suma Ponderada</strong> (que colapsa todos los objetivos en uno solo mediante pesos predefinidos), la optimización basada en Pareto aborda el problema en su forma multiobjetivo natural.</p>
+            <p>Bajo este paradigma, aceptamos que no existe una solución perfecta que gane en todo. En su lugar, buscamos un <strong>conjunto de soluciones equilibradas</strong>.</p>
+
+            <h3>Concepto de Dominancia de Pareto</h3>
+            <p>Para comparar soluciones cuando hay varios objetivos en conflicto, utilizamos la regla de dominancia. Se dice que una solución <i>A</i> <strong>domina</strong> a otra solución <i>B</i> (denotado como A &prec; B) si se cumplen rigurosamente estas dos condiciones simultáneas:</p>
+            <ol>
+                <li><i>A</i> no es peor que <i>B</i> en <strong>todos</strong> los objetivos evaluados.</li>
+                <li><i>A</i> es estrictamente mejor que <i>B</i> en <strong>al menos uno</strong> de los objetivos.</li>
+            </ol>
+
+            <div class="equation-box">
+                A &prec; B &iff; f<sub>i</sub>(A) &le; f<sub>i</sub>(B) &forall; i, y f<sub>j</sub>(A) &lt; f<sub>j</sub>(B) para algún j
+            </div>
+
+            <h3>El Frente de Pareto</h3>
+            <p>Las soluciones que <strong>no son dominadas por ninguna otra</strong> en todo el espacio de búsqueda forman lo que conocemos como el <strong>Frente de Pareto</strong>. Este frente representa la frontera de la máxima eficiencia posible: el punto donde es matemáticamente imposible mejorar un objetivo sin empeorar irremediablemente otro.</p>
+
+            <div class="example-box">
+                <strong>Ejemplo Didáctico: Diseño de un Dron Agrícola</strong>
+                <p>Supongamos que estás diseñando un dron y tienes dos objetivos principales:</p>
+                <ul>
+                    <li><strong>f<sub>1</sub>:</strong> Aumentar la duración de la batería (Maximizar).</li>
+                    <li><strong>f<sub>2</sub>:</strong> Reducir el peso total (Minimizar).</li>
+                </ul>
+                <p>Si haces el dron más ligero para cumplir f<sub>2</sub>, inevitablemente tendrá una batería más pequeña, afectando f<sub>1</sub>. Cada posible diseño de dron es un punto en el plano de soluciones. El Frente de Pareto te mostrará únicamente aquellas configuraciones que ofrecen el mejor equilibrio posible entre peso y energía.</p>
+            </div>
+
+            <div class="note">
+                <strong>Conclusión Didáctica:</strong>
+                <ul style="margin-bottom: 0;">
+                    <li>No hay un único ganador absoluto, sino <strong>múltiples compromisos posibles</strong>.</li>
+                    <li>La tarea del algoritmo de optimización es <strong>aproximar el frente de Pareto</strong> para encontrar estas opciones.</li>
+                    <li>La tarea del tomador de decisiones (el ingeniero o cliente) es analizar el frente y <strong>elegir</strong> la solución que mejor se adapte a sus prioridades del momento.</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

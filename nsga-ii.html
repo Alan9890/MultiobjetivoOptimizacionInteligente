@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>3. Ejemplo práctico guiado: NSGA-II (Non-Dominated Sorting Genetic Algorithm II)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Ejemplo práctico y guiado de NSGA-II: ordenamiento no dominado, crowding distance, elitismo y construcción del frente de Pareto." />
+  <style>
+    :root{
+      --text:#1b1b1d;
+      --muted:#6b7280;
+      --bg:#ffffff;
+      --soft:#f8fafc;
+      --border:#e5e7eb;
+      --accent:#2563eb;
+      --maxw:880px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    header{border-bottom:1px solid var(--border);padding:20px}
+    .nav{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;
+      gap:16px;justify-content:space-between}
+    .brand{font-weight:700;font-size:1.02rem}
+    .menu a{color:var(--muted);margin-left:18px}
+    .menu a:hover{color:var(--text);text-decoration:none}
+    main{max-width:var(--maxw);margin:32px auto;padding:0 20px}
+    h1{font-size:clamp(1.9rem,3.4vw,2.35rem);line-height:1.15;
+      margin:.2rem 0 1rem 0;letter-spacing:-0.015em}
+    h2{margin:2rem 0 .8rem;font-size:1.35rem}
+    h3{margin:1.6rem 0 .5rem;font-size:1.15rem}
+    h4{margin:1rem 0 .3rem;font-size:1.05rem}
+    p,li{line-height:1.75}
+    ul{line-height:1.8}
+    .pill{
+      display:inline-block;background:var(--soft);border:1px solid var(--border);
+      color:var(--muted);padding:.3rem .6rem;border-radius:999px;font-size:.85rem
+    }
+    pre{
+      margin:12px 0;background:#0b1021;color:#eaeefb;border-radius:12px;
+      padding:14px 16px;overflow:auto;font-size:.92rem;line-height:1.55
+    }
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+    .footer-nav{
+      border-top:1px solid var(--border);margin-top:36px;padding-top:16px;
+      display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+      color:var(--muted)
+    }
+    table{border-collapse:collapse;margin:16px 0;width:100%;font-size:.95rem}
+    th,td{border:1px solid var(--border);padding:8px 10px;text-align:left}
+    th{background:var(--soft)}
+    .lead{color:var(--muted);max-width:65ch}
+  </style>
+
+  <!-- MathJax para fórmulas -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="nav">
+      <div class="brand"><a href="./index.html">Blogs para Teoría</a></div>
+      <nav class="menu">
+        <a href="./index.html">Inicio</a>
+        <a href="#contenido">Contenido</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenido">
+    <h1>🚀 3. Ejemplo práctico guiado: NSGA-II (Non-Dominated Sorting Genetic Algorithm II)</h1>
+    <p class="lead">
+      <strong>Propósito</strong><br/>
+      El objetivo es que los estudiantes <strong>vean en acción</strong> un algoritmo genético multiobjetivo: cómo se generan las soluciones, cómo se ordenan por dominancia, cómo se mantiene la diversidad y cómo el frente de Pareto emerge con las generaciones.
+    </p>
+
+    <h2>🧩 3.1. Contexto del algoritmo</h2>
+    <p>El <strong>NSGA-II</strong> fue propuesto por <strong>Kalyanmoy Deb (2002)</strong> como una versión mejorada del NSGA clásico.
+    Su idea clave fue combinar tres mecanismos:</p>
+    <ol>
+      <li><strong>Ordenamiento rápido no dominado.</strong></li>
+      <li><strong>Preservación de diversidad mediante <em>crowding distance</em>.</strong></li>
+      <li><strong>Mecanismo elitista (padres + hijos).</strong></li>
+    </ol>
+    <p>El resultado es un algoritmo eficiente que mantiene un buen equilibrio entre <strong>exploración</strong> (buscar nuevas zonas del espacio) y <strong>explotación</strong> (refinar las buenas soluciones).</p>
+
+    <h2>⚙️ 3.2. Pasos del NSGA-II</h2>
+    <p>Vamos a desglosarlo con un ejemplo concreto.
+    Queremos <strong>minimizar simultáneamente</strong> dos funciones sencillas:</p>
+    <p>\[
+      f_1(x) = x^2, \quad f_2(x) = (x - 2)^2, \quad x \in [0, 2]
+    \]</p>
+    <p>Visualmente:</p>
+    <ul>
+      <li>\( f_1 \) es mínima en \( x = 0 \).</li>
+      <li>\( f_2 \) es mínima en \( x = 2 \).<br/>
+          No existe un único mínimo que satisfaga ambas, por tanto el frente de Pareto estará entre 0 y 2.</li>
+    </ul>
+
+    <h3>Paso 1. Generación de la población inicial</h3>
+    <p>Se crean \( N \) soluciones aleatorias (por ejemplo, 10 valores de \( x \) en el rango [0, 2]).
+    Cada \( x_i \) es un cromosoma.</p>
+    <p>\[
+      P_0 = \{0.1, 0.4, 0.8, 1.2, 1.8, \dots\}
+    \]</p>
+
+    <h3>Paso 2. Evaluación de objetivos</h3>
+    <p>Para cada individuo \( x_i \), se calculan ambos objetivos:</p>
+    <p>\[
+      f_1(x_i) = x_i^2, \quad f_2(x_i) = (x_i - 2)^2
+    \]</p>
+    <p>Esto produce un conjunto de puntos en el espacio \( (f_1, f_2) \).
+    Cada punto representa un compromiso distinto entre ambas metas.</p>
+
+    <h3>Paso 3. Ordenamiento no dominado</h3>
+    <p>Se determina qué individuos <strong>no son dominados por otros</strong>:</p>
+    <ul>
+      <li>Los no dominados → <strong>Frente 1</strong>.</li>
+      <li>Los dominados solo por los del frente 1 → <strong>Frente 2</strong>, etc.</li>
+    </ul>
+    <p>Ejemplo visual:</p>
+<pre><code>(0.1, 3.6)     → Frente 1
+(1.0, 1.0)     → Frente 1
+(1.5, 0.25)    → Frente 1
+(0.5, 2.25)    → Frente 2</code></pre>
+    <p>Estos frentes sirven para asignar prioridad: primero los del frente 1, luego los demás.</p>
+
+    <h3>Paso 4. Cálculo de Crowding Distance</h3>
+    <p>Para mantener la <strong>diversidad</strong> dentro de cada frente, se mide la “distancia de hacinamiento” (<em>crowding distance</em>).
+    En cada frente:</p>
+    <ol>
+      <li>Se ordenan las soluciones según cada objetivo.</li>
+      <li>Se calcula la distancia normalizada entre vecinos.</li>
+      <li>Los extremos reciben una distancia infinita (para preservar los bordes del frente).</li>
+    </ol>
+    <p>\[
+      \mathrm{CD}(x_i) = \sum_{k=1}^{m} \frac{f_k(i+1) - f_k(i-1)}{f_k^{\max} - f_k^{\min}}
+    \]</p>
+    <p>Las soluciones con mayor distancia se priorizan en la selección.</p>
+
+    <h3>Paso 5. Selección, cruza y mutación</h3>
+    <ul>
+      <li><strong>Selección:</strong> se eligen padres usando un torneo basado en <em>ranking</em> (por frente) y <em>crowding distance</em> (preferir soluciones diversas).</li>
+      <li><strong>Cruza:</strong> se combinan cromosomas para generar descendencia. Ejemplo: \[
+        x' = 0.5x_1 + 0.5x_2
+      \]</li>
+      <li><strong>Mutación:</strong> se altera ligeramente un gen para introducir variabilidad. Ejemplo: \[
+        x' = x + \epsilon \quad \text{con } \epsilon \sim \mathcal{N}(0, 0.1)
+      \]</li>
+    </ul>
+
+    <h3>Paso 6. Combinación y truncamiento elitista</h3>
+    <p>Una vez generados los hijos \( Q_t \), se combinan con los padres \( P_t \):</p>
+    <p>\[
+      R_t = P_t \cup Q_t
+    \]</p>
+    <p>Luego se ordenan todos los individuos por frentes de dominancia y <em>crowding distance</em>.
+    Los <strong>N mejores</strong> se seleccionan para formar la nueva generación \( P_{t+1} \).</p>
+    <p>Este mecanismo asegura que:</p>
+    <ul>
+      <li>Ninguna solución excelente se pierda (elitismo).</li>
+      <li>Las nuevas soluciones solo reemplacen a peores o redundantes.</li>
+    </ul>
+
+    <h2>🧮 3.3. Visualización conceptual</h2>
+    <p>Si graficas los puntos \( (f_1(x), f_2(x)) \):</p>
+    <ol>
+      <li>Al inicio, los puntos están dispersos en todo el plano.</li>
+      <li>Con cada generación, los puntos van “bajando” hacia una curva que representa el frente óptimo.</li>
+      <li>Finalmente, las soluciones convergen hacia el <strong>frente de Pareto</strong>, es decir, el conjunto de los mejores compromisos posibles entre \( f_1 \) y \( f_2 \).</li>
+    </ol>
+    <p>📊 <strong>Interpretación:</strong></p>
+    <ul>
+      <li>Los puntos a la izquierda reducen \( f_1 \) (costo).</li>
+      <li>Los de abajo reducen \( f_2 \) (error).</li>
+      <li>El frente es el límite de lo posible: mejorar uno implica sacrificar el otro.</li>
+    </ul>
+
+    <h2>🧠 3.4. Reflexión conceptual</h2>
+    <p>El NSGA-II no te da una única respuesta, sino una <strong>colección de soluciones igualmente válidas</strong>.
+    El ingeniero, investigador o tomador de decisiones elige <strong>cuál punto del frente le conviene más</strong> según su contexto (costo, energía, riesgo, etc.).</p>
+    <p>En agricultura de precisión, por ejemplo, podrías obtener un frente donde:</p>
+    <ul>
+      <li>\( f_1(x) \): consumo de agua</li>
+      <li>\( f_2(x) \): rendimiento del cultivo</li>
+    </ul>
+    <p>El algoritmo te ofrece estrategias de riego que equilibran ambos criterios.</p>
+
+    <h2>💻 3.5. Recomendación práctica</h2>
+<pre><code># En Colab
+!pip install deap
+</code></pre>
+    <p>Y luego implementar el ejemplo:</p>
+    <ul>
+      <li>Definir funciones <code>f1(x)</code> y <code>f2(x)</code>.</li>
+      <li>Crear individuos en el rango [0, 2].</li>
+      <li>Aplicar NSGA-II con 50 individuos y 20 generaciones.</li>
+      <li>Graficar el frente de Pareto con <code>matplotlib</code>.</li>
+    </ul>
+
+    <h2>📚 Referencias</h2>
+    <ul>
+      <li>Deb, K. (2001). <em>Multi-Objective Optimization using Evolutionary Algorithms.</em> Wiley.</li>
+      <li>Kochenderfer, M., & Wheeler, T. (2019). <em>Algorithms for Optimization.</em> MIT Press.</li>
+      <li>DEAP documentation: <a href="https://deap.readthedocs.io">https://deap.readthedocs.io</a></li>
+    </ul>
+
+    <div class="footer-nav">
+      <div>← <a href="./ga-multiobjetivo.html">2. Adaptación de GA al contexto multiobjetivo</a></div>
+      <div><a href="./index.html">Inicio →</a></div>
+    </div>
+  </main>
+</body>
+</html>

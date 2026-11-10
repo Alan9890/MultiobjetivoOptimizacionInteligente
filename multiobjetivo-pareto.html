@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Optimización Multiobjetivo — Frente de Pareto</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Introducción al problema multiobjetivo, dominancia y frente de Pareto con ejemplos didácticos." />
+  <!-- Estilos consistentes con los demás blogs -->
+  <style>
+    :root{
+      --text:#1b1b1d;
+      --muted:#6b7280;
+      --bg:#ffffff;
+      --soft:#f8fafc;
+      --border:#e5e7eb;
+      --accent:#2563eb;
+      --maxw:880px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    header{border-bottom:1px solid var(--border);padding:20px}
+    .nav{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:16px;justify-content:space-between}
+    .brand{font-weight:700;font-size:1.02rem}
+    .menu a{color:var(--muted);margin-left:18px}
+    .menu a:hover{color:var(--text);text-decoration:none}
+
+    main{max-width:var(--maxw);margin:32px auto;padding:0 20px}
+    h1{font-size:clamp(1.9rem,3.4vw,2.6rem);line-height:1.15;margin:.2rem 0 1rem 0;letter-spacing:-0.015em}
+    h2{margin:2rem 0 .6rem;font-size:1.35rem}
+    h3{margin:1.2rem 0 .4rem;font-size:1.1rem}
+    p,li{line-height:1.75}
+    ul{line-height:1.8}
+    .pill{
+      display:inline-block;background:var(--soft);border:1px solid var(--border);
+      color:var(--muted);padding:.3rem .6rem;border-radius:999px;font-size:.85rem
+    }
+    .hero-wrap{margin-bottom:18px}
+    .hero{
+      width:100%;height:auto;display:block;border-radius:12px;border:1px solid var(--border);
+      background:var(--soft)
+    }
+    figure{margin:0}
+    figcaption{color:var(--muted);font-size:.9rem;margin-top:6px}
+    .footer-nav{
+      border-top:1px solid var(--border);margin-top:36px;padding-top:16px;
+      display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted)
+    }
+    pre{
+      margin:12px 0;background:#0b1021;color:#eaeefb;border-radius:12px;
+      padding:14px 16px;overflow:auto;font-size:.92rem;line-height:1.55
+    }
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+  </style>
+
+  <!-- MathJax para fórmulas LaTeX -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <div class="brand"><a href="./index.html">Blogs para Teoría</a></div>
+      <nav class="menu">
+        <a href="./index.html">Inicio</a>
+        <a href="#contenido">Contenido</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenido">
+    <!-- Imagen antes del título principal -->
+    <div class="hero-wrap">
+      <figure>
+        <img src="./pareto.png" alt="Frente de Pareto y soluciones no dominadas" class="hero" />
+        <figcaption>Visualización del frente de Pareto (soluciones no dominadas).</figcaption>
+      </figure>
+    </div>
+
+    <h1>🌱 1. Introducción al problema multiobjetivo</h1>
+
+    <h3><strong>Motivación</strong></h3>
+    <p>En muchos problemas reales no existe un único criterio que determine qué tan buena es una solución.
+    Por ejemplo, en ingeniería, economía o inteligencia artificial, las decisiones suelen implicar <strong>compromisos</strong>: mejorar algo suele empeorar otra cosa.</p>
+    <p>Un sistema que optimiza la potencia de un motor, por ejemplo, probablemente aumente el consumo de combustible o el costo.
+    Así que no buscamos <strong>una solución perfecta</strong>, sino un <strong>conjunto de soluciones equilibradas</strong> entre varios objetivos.</p>
+
+    <h3><strong>1.1. Diferencia entre optimización monoobjetivo y multiobjetivo</strong></h3>
+    <p><strong>Optimización monoobjetivo:</strong><br/>
+    Buscamos <strong>un valor óptimo único</strong> de una función objetivo \( f(x) \):</p>
+    <p>\[ \min f(x) \quad \text{o} \quad \max f(x) \]</p>
+    <p><em>Ejemplo:</em><br/>Minimizar el costo de producción de un artículo.</p>
+    <p><strong>Resultado:</strong> una sola mejor solución \( x^* \).</p>
+
+    <p><strong>Optimización multiobjetivo:</strong><br/>
+    Buscamos <strong>minimizar o maximizar varias funciones simultáneamente</strong>:</p>
+    <p>\[ \min \,[f_1(x), f_2(x), \dots, f_m(x)] \]</p>
+    <p><em>Ejemplo:</em></p>
+    <ul>
+      <li>\( f_1(x) = \text{Costo} \)</li>
+      <li>\( f_2(x) = -\text{Eficiencia energética} \)</li>
+    </ul>
+    <p>Aquí reducir costo puede <strong>entrar en conflicto</strong> con mejorar la eficiencia.</p>
+    <p><strong>Resultado:</strong> no hay una solución única que sea la mejor en todo, sino un <strong>conjunto de soluciones óptimas en distintos sentidos</strong>.</p>
+
+    <h3><strong>1.2. Concepto de Dominancia de Pareto</strong></h3>
+    <p>Para comparar soluciones cuando hay varios objetivos, usamos el concepto de <strong>dominancia de Pareto</strong>:</p>
+    <p>Una solución \( A \) <strong>domina</strong> a otra solución \( B \) si se cumple:</p>
+    <ol>
+      <li>\( A \) no es peor que \( B \) en todos los objetivos, y</li>
+      <li>\( A \) es estrictamente mejor que \( B \) en al menos uno de ellos.</li>
+    </ol>
+    <p>Formalmente:</p>
+    <p>\[
+    A \prec B \iff
+    \begin{cases}
+    f_i(A) \le f_i(B), & \forall i \in \{1,\dots,m\},\\
+    f_j(A) &lt; f_j(B), & \text{para algún } j.
+    \end{cases}
+    \]</p>
+    <p>Las soluciones que <strong>no son dominadas por ninguna otra</strong> forman el <strong>Frente de Pareto</strong>.</p>
+
+    <h3><strong>1.3. Frente de Pareto</strong></h3>
+    <p>El <strong>frente de Pareto</strong> representa todas las soluciones “igualmente óptimas”, en el sentido de que <strong>no puedes mejorar un objetivo sin empeorar otro</strong>.</p>
+    <p>Visualmente, si dibujas dos objetivos \( f_1(x) \) y \( f_2(x) \), el frente es la curva formada por los puntos más eficientes (el borde del conjunto de soluciones factibles).</p>
+    <p>🔹 <strong>Ejemplo intuitivo:</strong><br/>
+    Supón que diseñas un dron agrícola:</p>
+    <ul>
+      <li>Quieres <strong>aumentar la duración de la batería</strong> (f1).</li>
+      <li>Pero también <strong>reducir el peso total</strong> (f2).</li>
+    </ul>
+    <p>Si haces el dron más ligero, puede volar menos tiempo por menor capacidad de batería.
+    Cada posible diseño es un punto en el plano (peso, duración).
+    El frente de Pareto muestra las configuraciones que ofrecen el <strong>mejor equilibrio posible</strong> entre ambos criterios.</p>
+
+    <h3><strong>1.4. Ejemplos reales</strong></h3>
+    <p><strong>Ejemplo 1: Energía</strong></p>
+    <blockquote>
+      Minimizar el costo de producción de energía y maximizar el rendimiento energético de una planta solar.
+      Un sistema más eficiente requiere materiales más costosos → conflicto.
+    </blockquote>
+
+    <p><strong>Ejemplo 2: Inteligencia Artificial</strong></p>
+    <blockquote>
+      Minimizar el error de un modelo de red neuronal y minimizar su complejidad (número de parámetros).
+      Modelos más grandes tienen menor error, pero son más costosos de entrenar y menos interpretables.
+    </blockquote>
+
+    <p><strong>Ejemplo 3: Agricultura de precisión</strong></p>
+    <blockquote>
+      Maximizar el rendimiento del cultivo y minimizar el consumo de agua.
+      Las decisiones de riego óptimas no son absolutas, sino un conjunto de estrategias “eficientes”.
+    </blockquote>
+
+    <h3><strong>1.5. Conclusión didáctica</strong></h3>
+    <ul>
+      <li>No hay un único ganador, sino <strong>múltiples compromisos posibles</strong>.</li>
+      <li>La tarea del algoritmo es <strong>aproximar el frente de Pareto</strong>.</li>
+      <li>La tarea del decisor (humano) es <strong>elegir entre esas soluciones</strong> según sus prioridades.</li>
+    </ul>
+
+    <div class="footer-nav">
+      <div>← <a href="./index.html">Inicio</a></div>
+      <div><span style="opacity:.6">Fin</span></div>
+    </div>
+  </main>
+</body>
+</html>
